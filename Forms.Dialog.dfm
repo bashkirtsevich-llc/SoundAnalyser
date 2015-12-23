@@ -1,0 +1,29 @@
+object frmDialog: TfrmDialog
+  Left = 0
+  Top = 0
+  BorderStyle = bsNone
+  Caption = 'frmDialog'
+  ClientHeight = 117
+  ClientWidth = 500
+  Color = clWhite
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  OnCloseQuery = FormCloseQuery
+  PixelsPerInch = 96
+  TextHeight = 13
+  object pnlFrames: TPanel
+    Left = 0
+    Top = 0
+    Width = 500
+    Height = 117
+    Align = alClient
+    BevelInner = bvLowered
+    BorderWidth = 1
+    TabOrder = 0
+  end
+end
