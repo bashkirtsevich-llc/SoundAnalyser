@@ -166,7 +166,7 @@ begin
                       BitsPerSample := av_get_bytes_per_sample(audioDecCtx^.sample_fmt) * 8;
                       SampleRate    := audioDecCtx^.sample_rate;
                       Channels      := audioDecCtx^.channels;
-                      Duration      := fs.Size div Single.Size div Channels div SampleRate;
+                      Duration      := (fs.Size div Single.Size div Channels div SampleRate) or 1;
                     end;
 
                     if Assigned(AOnComplete) then
