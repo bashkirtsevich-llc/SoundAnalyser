@@ -17,7 +17,8 @@ uses
   Forms.Dialog in 'Forms.Dialog.pas' {frmDialog},
   Frames.Persistent in 'Frames.Persistent.pas' {frmPersistent: TFrame},
   Frames.Dialog in 'Frames.Dialog.pas' {frDialog: TFrame},
-  Frames.Progress in 'Frames.Progress.pas' {frProgress: TFrame};
+  Frames.Progress in 'Frames.Progress.pas' {frProgress: TFrame},
+  Frames.Export in 'Frames.Export.pas' {frSettings: TFrame};
 
 {$R *.res}
 

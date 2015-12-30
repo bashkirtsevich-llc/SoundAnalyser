@@ -64,9 +64,8 @@ object frmMain: TfrmMain
     end
     object actExport: TAction
       Caption = #1069#1082#1089#1087#1086#1088#1090' '#1075#1088#1072#1092#1080#1082#1072
-      Enabled = False
       ShortCut = 24659
-      Visible = False
+      OnExecute = actExportExecute
     end
     object actAbout: TAction
       Caption = #1054' '#1087#1088#1086#1075#1088#1072#1084#1084#1077

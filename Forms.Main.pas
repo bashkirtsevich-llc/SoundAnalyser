@@ -10,7 +10,7 @@ uses
   Analysis, Analysis.Spectrum, Analysis.Spectrum.Palette,
   DragDrop, DropTarget, DropSource, DragDropFile,
   System.Actions, Vcl.ActnList, Vcl.Menus,
-  Frames.Progress, Frames.About, Forms.Dialog;
+  Frames.Progress, Frames.About, Frames.Export, Forms.Dialog;
 
 type
   TfrmMain = class(TForm)
@@ -35,6 +35,7 @@ type
     procedure actlstMainUpdate(Action: TBasicAction; var Handled: Boolean);
     procedure actAboutExecute(Sender: TObject);
     procedure imgPopupMenuClick(Sender: TObject);
+    procedure actExportExecute(Sender: TObject);
   private
     const
       AppName = 'Sound Analyzer';
@@ -44,6 +45,8 @@ type
     {FDropExporter: TDropFileSource;}
 
     function GraphicAvailable: Boolean; inline;
+
+    procedure ConvertToPNG(AGraphic: TGraphic; const APath: string); inline;
 
     procedure OpenFile(const AFileName: string);
     procedure ShowDropIcon;
@@ -81,6 +84,30 @@ begin
   end;
 end;
 
+procedure TfrmMain.actExportExecute(Sender: TObject);
+var
+  bmp: TBitmap;
+begin
+  with TfrmDialog.Create(Self, TfrSettings) do
+  try
+    if (ShowModal = mrOk) and dlgSaveGraphic.Execute then
+    begin
+      bmp := TBitmap.Create;
+      try
+        with TfrSettings(Frame) do
+          FAnalyzer.Draw(bmp, Integer.Parse(medtHeight.Text),
+            Integer.Parse(medtWidth.Text));
+
+        ConvertToPNG(bmp, ChangeFileExt(dlgSaveGraphic.FileName, '.png'))
+      finally
+        bmp.Free;
+      end;
+    end;
+  finally
+    Free;
+  end;
+end;
+
 procedure TfrmMain.actlstMainUpdate(Action: TBasicAction; var Handled: Boolean);
 begin
   actSave.Enabled := GraphicAvailable;
@@ -94,18 +121,21 @@ begin
 end;
 
 procedure TfrmMain.actSaveExecute(Sender: TObject);
+begin
+  if dlgSaveGraphic.Execute then
+    ConvertToPNG(imgSpectrum.Picture.Graphic, ChangeFileExt(dlgSaveGraphic.FileName, '.png'))
+end;
+
+procedure TfrmMain.ConvertToPNG(AGraphic: TGraphic; const APath: string);
 var
   img: TPngImage;
 begin
-  if dlgSaveGraphic.Execute then
-  begin
-    img := TPngImage.Create;
-    try
-      img.Assign(imgSpectrum.Picture.Graphic);
-      img.SaveToFile(ChangeFileExt(dlgSaveGraphic.FileName, '.png'));
-    finally
-      img.Free;
-    end;
+  img := TPngImage.Create;
+  try
+    img.Assign(AGraphic);
+    img.SaveToFile(APath);
+  finally
+    img.Free;
   end;
 end;
 
