@@ -3,8 +3,8 @@
 interface
 
 uses
-  System.Classes, System.SysUtils,
-  System.Generics.Collections, System.Generics.Defaults, System.IOUtils,
+  System.Classes, System.SysUtils, System.Generics.Collections,
+  System.Generics.Defaults, System.IOUtils, System.Math,
   Winapi.Windows,
   Vcl.Graphics, Vcl.Forms,
   Analysis.Spectrum, Analysis.Spectrum.Palette, Analysis.Spectrum.Quantization,
@@ -53,7 +53,7 @@ type
   public
     procedure Clear;
     function Analyse(const AFileName: string): Boolean;
-    procedure Draw(ABitmap: TBitmap);
+    procedure Draw(ABitmap: TBitmap; AHeight: Integer = -1; AWidth: Integer = -1);
     constructor Create; reintroduce;
     destructor Destroy; override;
   end;
@@ -173,13 +173,16 @@ begin
   inherited;
 end;
 
-procedure TAnalyzer.Draw(ABitmap: TBitmap);
+procedure TAnalyzer.Draw(ABitmap: TBitmap;
+  AHeight, AWidth: Integer);
 var
   i: Integer;
   r: TRect;
 begin
   with ABitmap, ABitmap.Canvas do
   begin
+    Height  := IfThen(AHeight > 0, AHeight, Height);
+    Width   := IfThen(AWidth  > 0, AWidth , Width);
     { черный фон }
     Brush.Style := bsSolid;
     Pen.Color := clBlack;
