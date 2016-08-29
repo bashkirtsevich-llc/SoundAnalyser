@@ -165,7 +165,14 @@ begin
   end;
 
   if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
-    OpenFile(ParamStr(1));
+    TThread.CreateAnonymousThread(procedure
+    begin
+      Sleep(100);
+      TThread.Synchronize(nil, procedure
+      begin
+        OpenFile(ParamStr(1));
+      end);
+    end).Start;
 
   (*FDropExporter := TDropFileSource.Create(Self);
   with FDropExporter do
