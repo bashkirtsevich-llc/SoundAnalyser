@@ -16,6 +16,7 @@ unit DropTarget;
 interface
 
 uses
+  Types, UITypes,
   DragDrop,
   Windows, ActiveX, Classes, Controls, CommCtrl, ExtCtrls, Forms;
 

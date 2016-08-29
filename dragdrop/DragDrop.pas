@@ -17,6 +17,7 @@ interface
 {$include DragDrop.inc}
 
 uses
+  Types,
 {$ifndef VER17_PLUS}
   Graphics,
 {$endif}
