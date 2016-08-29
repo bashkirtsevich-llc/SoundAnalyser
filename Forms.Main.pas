@@ -95,8 +95,8 @@ begin
       bmp := TBitmap.Create;
       try
         with TfrSettings(Frame) do
-          FAnalyzer.Draw(bmp, Integer.Parse(medtHeight.Text),
-            Integer.Parse(medtWidth.Text));
+          FAnalyzer.Draw(bmp, Integer.Parse(Trim(medtHeight.Text)),
+            Integer.Parse(Trim(medtWidth.Text)));
 
         ConvertToPNG(bmp, ChangeFileExt(dlgSaveGraphic.FileName, '.png'))
       finally
