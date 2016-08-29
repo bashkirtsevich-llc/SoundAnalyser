@@ -350,8 +350,8 @@ end;
 procedure TfrmMain.ShowSpectrum;
 begin
   imgSpectrum.Center := False;
-  imgSpectrum.Picture.Bitmap.Height := imgSpectrum.Height;
-  imgSpectrum.Picture.Bitmap.Width  := imgSpectrum.Width;
+  imgSpectrum.Picture.Bitmap.Height := imgSpectrum.Height - IfThen(Odd(imgSpectrum.Height), 1);
+  imgSpectrum.Picture.Bitmap.Width  := imgSpectrum.Width  - IfThen(Odd(imgSpectrum.Width) , 1);
 
   FAnalyzer.Draw(imgSpectrum.Picture.Bitmap);
 end;
