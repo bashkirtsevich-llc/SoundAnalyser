@@ -39,7 +39,7 @@ type
   private
     const
       AppName = 'Sound Analyzer';
-      AppVers = 'v.1.3 by M.A.D.M.A.N.';
+      AppVers = 'v.1.4 by M.A.D.M.A.N.';
   private
     FAnalyzer: TAnalyzer;
     {FDropExporter: TDropFileSource;}
@@ -163,6 +163,9 @@ begin
     OnDrop    := OnDropFile;
     Target    := Self;
   end;
+
+  if (ParamCount > 0) and TFile.Exists(ParamStr(1)) then
+    OpenFile(ParamStr(1));
 
   (*FDropExporter := TDropFileSource.Create(Self);
   with FDropExporter do
