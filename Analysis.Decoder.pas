@@ -63,6 +63,7 @@ function Decode(
   end;
 
 var
+  fname: AnsiString;
   fs: TFileStream;
   info: TDecodeInfo;
   fmtCtx: PAVFormatContext;
@@ -83,112 +84,119 @@ begin
 
   fmtCtx := nil;
 
-  if avformat_open_input(@fmtCtx, PAnsiChar(AnsiString(AInFile)), nil, nil) = 0 then
+  fname := TPath.GetTempFileName;
+
+  TFile.Copy(AInFile, fname, True);
   try
-    if avformat_find_stream_info(fmtCtx, nil) >= 0 then
-    begin
-      audioStreamIdx := av_find_best_stream(fmtCtx, AVMEDIA_TYPE_AUDIO, -1, -1, nil, 0);
-
-      if audioStreamIdx >= 0 then
+    if avformat_open_input(@fmtCtx, PAnsiChar(fname), nil, nil) = 0 then
+    try
+      if avformat_find_stream_info(fmtCtx, nil) >= 0 then
       begin
-        st := PPtrIdx(fmtCtx.streams, audioStreamIdx);
+        audioStreamIdx := av_find_best_stream(fmtCtx, AVMEDIA_TYPE_AUDIO, -1, -1, nil, 0);
 
-        decCtx := st.codec;
-
-        avdec := avcodec_find_decoder(decCtx.codec_id);
-        if Assigned(avdec) then
+        if audioStreamIdx >= 0 then
         begin
-          opts := nil;
-          av_dict_set(@opts, 'refcounted_frames', '1', 0);
+          st := PPtrIdx(fmtCtx.streams, audioStreamIdx);
 
-          if avcodec_open2(decCtx, avdec, @opts) >= 0 then
+          decCtx := st.codec;
+
+          avdec := avcodec_find_decoder(decCtx.codec_id);
+          if Assigned(avdec) then
           begin
-            audioStream := PPtrIdx(fmtCtx.streams, audioStreamIdx);
+            opts := nil;
+            av_dict_set(@opts, 'refcounted_frames', '1', 0);
 
-            if Assigned(audioStream) then
+            if avcodec_open2(decCtx, avdec, @opts) >= 0 then
             begin
-              audioDecCtx := audioStream.codec;
-              try
-                frame := av_frame_alloc;
-                Assert(Assigned(frame));
+              audioStream := PPtrIdx(fmtCtx.streams, audioStreamIdx);
 
+              if Assigned(audioStream) then
+              begin
+                audioDecCtx := audioStream.codec;
                 try
-                  fs := TFileStream.Create(ADestFile, fmCreate or fmShareDenyWrite);
+                  frame := av_frame_alloc;
+                  Assert(Assigned(frame));
+
                   try
-                    av_init_packet(@pkt);
-
-                    pkt.data := nil;
-                    pkt.size := 0;
-
-                    while av_read_frame(fmtCtx, @pkt) = 0 do
+                    fs := TFileStream.Create(ADestFile, fmCreate or fmShareDenyWrite);
                     try
-                      if pkt.stream_index = audioStreamIdx then
-                      repeat
-                        size := avcodec_decode_audio4(audioDecCtx, frame, @gotFrame, @pkt);
-                        if size > 0 then
-                        begin
-                          size := Min(size, pkt.size);
+                      av_init_packet(@pkt);
 
-                          if gotFrame <> 0 then
+                      pkt.data := nil;
+                      pkt.size := 0;
+
+                      while av_read_frame(fmtCtx, @pkt) = 0 do
+                      try
+                        if pkt.stream_index = audioStreamIdx then
+                        repeat
+                          size := avcodec_decode_audio4(audioDecCtx, frame, @gotFrame, @pkt);
+                          if size > 0 then
                           begin
-                            samples := frame.nb_samples * frame.channels;
-                            SetLength(data, samples);
+                            size := Min(size, pkt.size);
 
-                            if av_sample_fmt_is_planar(TAVSampleFormat(frame.format)) <> 0 then
-                              for i := 0 to frame.nb_samples - 1 do
-                                for j := 0 to frame.channels - 1 do
-                                  data[i * frame.channels + j] := ConvertData(TAVSampleFormat(frame.format), PPtrIdx(frame.extended_data, j), i)
-                            else
-                              for i := 0 to samples - 1 do
-                                data[i] := ConvertData(TAVSampleFormat(frame.format), frame.extended_data, i);
+                            if gotFrame <> 0 then
+                            begin
+                              samples := frame.nb_samples * frame.channels;
+                              SetLength(data, samples);
 
-                            fs.Write(data[0], Length(data) * Single.Size);
+                              if av_sample_fmt_is_planar(TAVSampleFormat(frame.format)) <> 0 then
+                                for i := 0 to frame.nb_samples - 1 do
+                                  for j := 0 to frame.channels - 1 do
+                                    data[i * frame.channels + j] := ConvertData(TAVSampleFormat(frame.format), PPtrIdx(frame.extended_data, j), i)
+                              else
+                                for i := 0 to samples - 1 do
+                                  data[i] := ConvertData(TAVSampleFormat(frame.format), frame.extended_data, i);
 
-                            if Assigned(AOnProgress) then
-                              AOnProgress(fs.Size);
+                              fs.Write(data[0], Length(data) * Single.Size);
 
-                            av_frame_unref(frame);
-                          end;
+                              if Assigned(AOnProgress) then
+                                AOnProgress(fs.Size);
 
-                          Inc(pkt.data, size);
-                          Dec(pkt.size, size);
-                        end else
-                          Break;
-                      until pkt.size <= 0;
+                              av_frame_unref(frame);
+                            end;
+
+                            Inc(pkt.data, size);
+                            Dec(pkt.size, size);
+                          end else
+                            Break;
+                        until pkt.size <= 0;
+                      finally
+                        av_free_packet(@pkt);
+                      end;
+
+                      with info do
+                      begin
+                        FileName      := AInFile;
+                        CodecName     := string(audioDecCtx^.codec^.long_name);
+                        BitsPerSample := av_get_bytes_per_sample(audioDecCtx^.sample_fmt) * 8;
+                        SampleRate    := audioDecCtx^.sample_rate;
+                        Channels      := audioDecCtx^.channels;
+                        Duration      := (fs.Size div Single.Size div Channels div SampleRate) or 1;
+                      end;
+
+                      if Assigned(AOnComplete) then
+                        AOnComplete(info, fs);
+
+                      Result := True;
                     finally
-                      av_free_packet(@pkt);
+                      fs.Free;
                     end;
-
-                    with info do
-                    begin
-                      FileName      := AInFile;
-                      CodecName     := string(audioDecCtx^.codec^.long_name);
-                      BitsPerSample := av_get_bytes_per_sample(audioDecCtx^.sample_fmt) * 8;
-                      SampleRate    := audioDecCtx^.sample_rate;
-                      Channels      := audioDecCtx^.channels;
-                      Duration      := (fs.Size div Single.Size div Channels div SampleRate) or 1;
-                    end;
-
-                    if Assigned(AOnComplete) then
-                      AOnComplete(info, fs);
-
-                    Result := True;
                   finally
-                    fs.Free;
+                    av_frame_free(@frame);
                   end;
                 finally
-                  av_frame_free(@frame);
+                  avcodec_close(audioDecCtx);
                 end;
-              finally
-                avcodec_close(audioDecCtx);
               end;
             end;
           end;
         end;
       end;
+    finally
+      avformat_close_input(@fmtCtx);
     end;
   finally
-    avformat_close_input(@fmtCtx);
+    TFile.Delete(fname);
   end;
 end;
 
